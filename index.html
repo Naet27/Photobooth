@@ -371,16 +371,6 @@
             stickers: []
         };
 
-        // Filter Mapping for HTML Canvas API Context
-        const canvasFilterMap = {
-            'filter-korean': 'brightness(1.08) contrast(1.02) saturate(1.12) hue-rotate(-3deg)',
-            'filter-peach': 'brightness(1.06) saturate(1.22) sepia(0.08) hue-rotate(-12deg)',
-            'filter-vintage': 'sepia(0.3) contrast(1.08) brightness(0.98)',
-            'filter-warm': 'sepia(0.18) saturate(1.25) brightness(1.04)',
-            'filter-bw': 'grayscale(100%) contrast(1.15)',
-            'filter-none': 'none'
-        };
-
         const layoutConfigs = {
             '4-strip': { count: 4, gridClass: 'grid-cols-1', aspect: 'aspect-[4/3]' },
             '2x2': { count: 4, gridClass: 'grid-cols-2', aspect: 'aspect-[4/3]' },
@@ -440,7 +430,6 @@
             const frame = document.getElementById('photoboothFrame');
             frame.className = `theme-${themeName} rounded-2xl p-3 shadow-md transition-all duration-300 relative select-none w-full max-w-[230px] sm:max-w-[250px] flex flex-col items-center border-4 border-white my-2`;
 
-            // Adjust Caption text color based on theme
             const captionDisp = document.getElementById('frameCaptionDisplay');
             const dateDisp = document.getElementById('frameDateDisplay');
 
@@ -463,159 +452,208 @@
             document.querySelectorAll('.layout-btn').forEach(btn => {
                 btn.className = "layout-btn p-2 rounded-2xl border border-gray-200 hover:border-pink-300 flex flex-col items-center gap-1 transition cursor-pointer";
             });
-            document.getElementById(`layoutBtn-${layoutType}`).className = "layout-btn p-2 rounded-2xl border-2 border-pink-400 bg-pink-50 flex flex-col items-center gap-1 transition cursor-pointer";
+            const activeBtn = document.getElementById(`layoutBtn-${layoutType}`);
+            if(activeBtn) activeBtn.className = "layout-btn p-2 rounded-2xl border-2 border-pink-400 bg-pink-50 flex flex-col items-center gap-1 transition cursor-pointer";
 
-            renderFramePhotos();
-            renderSlotsThumbnails();
+            renderFrameSlots();
+            updatePhotoBadges();
         }
 
-        function renderFramePhotos() {
+        function renderFrameSlots() {
             const grid = document.getElementById('framePhotosGrid');
             const config = layoutConfigs[state.currentLayout];
+            
             grid.className = `w-full grid ${config.gridClass} gap-2 flex-grow z-10`;
             grid.innerHTML = '';
 
             for (let i = 0; i < config.count; i++) {
                 const photoSrc = state.capturedPhotos[i];
                 const slotDiv = document.createElement('div');
-                slotDiv.className = `${config.aspect} bg-white/60 rounded-xl overflow-hidden border border-white/80 shadow-xs relative flex items-center justify-center`;
-
+                slotDiv.className = `w-full ${config.aspect} bg-white/60 rounded-xl overflow-hidden border border-white/50 shadow-xs flex items-center justify-center relative group cursor-pointer`;
+                
                 if (photoSrc) {
-                    slotDiv.innerHTML = `<img src="${photoSrc}" class="w-full h-full object-cover">`;
+                    slotDiv.innerHTML = `<img src="${photoSrc}" class="w-full h-full object-cover">
+                    <div onclick="retakeSingleSlot(${i})" class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center text-white text-xs font-bold gap-1">
+                        <i class="fa-solid fa-camera-rotate text-base"></i>
+                        <span>ถ่ายใหม่</span>
+                    </div>`;
                 } else {
-                    slotDiv.innerHTML = `<span class="text-xs text-gray-400 font-mali font-bold">${i + 1}</span>`;
+                    slotDiv.innerHTML = `<div class="text-gray-300 flex flex-col items-center gap-1">
+                        <i class="fa-solid fa-image text-xl"></i>
+                        <span class="text-[10px] font-bold">${i + 1}</span>
+                    </div>`;
                 }
                 grid.appendChild(slotDiv);
             }
+            renderThumbnails();
         }
 
-        function renderSlotsThumbnails() {
+        function renderThumbnails() {
             const container = document.getElementById('slotsThumbnails');
-            container.innerHTML = '';
             const config = layoutConfigs[state.currentLayout];
-            
-            document.getElementById('photoBadgeTotal').innerText = config.count;
-            document.getElementById('photoBadgeCount').innerText = state.capturedPhotos.filter(Boolean).length;
+            container.innerHTML = '';
 
             for (let i = 0; i < config.count; i++) {
-                const photo = state.capturedPhotos[i];
+                const photoSrc = state.capturedPhotos[i];
                 const btn = document.createElement('button');
                 btn.onclick = () => retakeSingleSlot(i);
-                btn.className = `aspect-[4/3] rounded-lg border text-[10px] font-bold overflow-hidden relative flex items-center justify-center transition cursor-pointer ${photo ? 'border-pink-300 bg-white' : 'border-dashed border-gray-300 bg-gray-50 text-gray-400'}`;
-
-                if (photo) {
-                    btn.innerHTML = `<img src="${photo}" class="w-full h-full object-cover"><div class="absolute inset-0 bg-black/30 text-white opacity-0 hover:opacity-100 transition flex items-center justify-center"><i class="fa-solid fa-rotate-right"></i></div>`;
+                btn.className = `aspect-[4/3] rounded-lg border flex items-center justify-center overflow-hidden relative cursor-pointer ${photoSrc ? 'border-pink-400 bg-pink-50' : 'border-gray-200 bg-gray-100 text-gray-400'}`;
+                
+                if (photoSrc) {
+                    btn.innerHTML = `<img src="${photoSrc}" class="w-full h-full object-cover">
+                    <span class="absolute top-0.5 left-0.5 bg-black/60 text-white text-[8px] px-1 rounded font-bold">${i + 1}</span>`;
                 } else {
-                    btn.innerText = `ช่อง ${i + 1}`;
+                    btn.innerHTML = `<span class="text-xs font-bold">${i + 1}</span>`;
                 }
                 container.appendChild(btn);
             }
         }
 
-        function retakeSingleSlot(index) {
-            state.activeRetakeIndex = index;
-            showToast(`เตรียมถ่ายซ่อมช่องที่ ${index + 1} ได้เลย!`);
-            startPhotoSequence();
+        function updatePhotoBadges() {
+            const config = layoutConfigs[state.currentLayout];
+            document.getElementById('photoBadgeCount').innerText = state.capturedPhotos.length;
+            document.getElementById('photoBadgeTotal').innerText = config.count;
+        }
+
+        // --- MANUAL PIXEL FILTER POLYFILL FOR IOS / SAFARI COMPATIBILITY ---
+        function applyPixelFilter(ctx, width, height, filterType) {
+            if (filterType === 'filter-none') return;
+
+            const imgData = ctx.getImageData(0, 0, width, height);
+            const data = imgData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                let r = data[i];
+                let g = data[i + 1];
+                let b = data[i + 2];
+
+                if (filterType === 'filter-korean') {
+                    // Brightness 1.08, Contrast 1.02, Saturate 1.12
+                    r = Math.min(255, (r - 128) * 1.02 + 128 + 20);
+                    g = Math.min(255, (g - 128) * 1.02 + 128 + 20);
+                    b = Math.min(255, (b - 128) * 1.02 + 128 + 18);
+                } else if (filterType === 'filter-peach') {
+                    // Soft Pinkish Warmth
+                    r = Math.min(255, r * 1.1 + 10);
+                    g = Math.min(255, g * 1.02 + 5);
+                    b = Math.min(255, b * 0.95);
+                } else if (filterType === 'filter-vintage') {
+                    // Sepia blend + contrast
+                    let tr = 0.393 * r + 0.769 * g + 0.189 * b;
+                    let tg = 0.349 * r + 0.686 * g + 0.168 * b;
+                    let tb = 0.272 * r + 0.534 * g + 0.131 * b;
+                    r = Math.min(255, r * 0.7 + tr * 0.3);
+                    g = Math.min(255, g * 0.7 + tg * 0.3);
+                    b = Math.min(255, b * 0.7 + tb * 0.3);
+                } else if (filterType === 'filter-warm') {
+                    // Warm Sunset
+                    r = Math.min(255, r * 1.12 + 8);
+                    g = Math.min(255, g * 1.05 + 4);
+                    b = Math.min(255, b * 0.88);
+                } else if (filterType === 'filter-bw') {
+                    // High Contrast Grayscale
+                    let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                    gray = (gray - 128) * 1.15 + 128;
+                    r = g = b = Math.min(255, Math.max(0, gray));
+                }
+
+                data[i] = r;
+                data[i + 1] = g;
+                data[i + 2] = b;
+            }
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        // Capture Frame Function
+        function capturePhotoFromCamera() {
+            if (!webcam.videoWidth) return null;
+
+            captureCanvas.width = webcam.videoWidth;
+            captureCanvas.height = webcam.videoHeight;
+            const ctx = captureCanvas.getContext('2d');
+
+            ctx.save();
+            if (state.isMirrored) {
+                ctx.translate(captureCanvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(webcam, 0, 0, captureCanvas.width, captureCanvas.height);
+            ctx.restore();
+
+            // Apply manual pixel processing for iOS compatibility
+            applyPixelFilter(ctx, captureCanvas.width, captureCanvas.height, state.currentFilter);
+
+            triggerFlashAnimation();
+            return captureCanvas.toDataURL('image/png');
+        }
+
+        function triggerFlashAnimation() {
+            const flash = document.getElementById('flashOverlay');
+            flash.classList.remove('flash-overlay-active');
+            void flash.offsetWidth;
+            flash.classList.add('flash-overlay-active');
         }
 
         async function startPhotoSequence() {
             const config = layoutConfigs[state.currentLayout];
+            const btn = document.getElementById('startCaptureBtn');
+            btn.disabled = true;
 
             if (state.activeRetakeIndex !== null) {
                 await runCountdown();
-                capturePhotoToSlot(state.activeRetakeIndex);
-                state.activeRetakeIndex = null;
-                renderSlotsThumbnails();
-                renderFramePhotos();
-                showToast("ถ่ายซ่อมรูปสำเร็จ!");
-                triggerConfetti();
-                return;
-            }
-
-            state.capturedPhotos = [];
-            renderSlotsThumbnails();
-
-            for (let i = 0; i < config.count; i++) {
-                await runCountdown();
-                capturePhotoToSlot(i);
-                renderSlotsThumbnails();
-                renderFramePhotos();
-                if (i < config.count - 1) {
-                    await new Promise(r => setTimeout(r, 1000));
+                const photo = capturePhotoFromCamera();
+                if (photo) {
+                    state.capturedPhotos[state.activeRetakeIndex] = photo;
                 }
+                state.activeRetakeIndex = null;
+            } else {
+                state.capturedPhotos = [];
+                for (let i = 0; i < config.count; i++) {
+                    updatePhotoBadges();
+                    await runCountdown();
+                    const photo = capturePhotoFromCamera();
+                    if (photo) {
+                        state.capturedPhotos.push(photo);
+                        renderFrameSlots();
+                        updatePhotoBadges();
+                    }
+                }
+                confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
             }
 
-            showToast("ถ่ายครบทุกรูปแล้ว");
-            triggerConfetti();
+            btn.disabled = false;
+            renderFrameSlots();
+            updatePhotoBadges();
+        }
+
+        function retakeSingleSlot(index) {
+            state.activeRetakeIndex = index;
+            showToast(`เตรียมพร้อมถ่ายซ่อมช่องที่ ${index + 1}`);
+            startPhotoSequence();
         }
 
         function runCountdown() {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('countdownOverlay');
-                const numEl = document.getElementById('countdownNumber');
+                const numDisplay = document.getElementById('countdownNumber');
                 overlay.classList.remove('hidden');
                 overlay.classList.add('flex');
 
                 let count = state.timerSeconds;
-                numEl.innerText = count;
+                numDisplay.innerText = count;
 
                 const timer = setInterval(() => {
                     count--;
                     if (count > 0) {
-                        numEl.innerText = count;
+                        numDisplay.innerText = count;
                     } else {
                         clearInterval(timer);
                         overlay.classList.add('hidden');
                         overlay.classList.remove('flex');
-                        
-                        // Flash Effect
-                        const flash = document.getElementById('flashOverlay');
-                        flash.classList.add('flash-overlay-active');
-                        setTimeout(() => flash.classList.remove('flash-overlay-active'), 350);
-                        
                         resolve();
                     }
                 }, 1000);
             });
-        }
-
-        function capturePhotoToSlot(slotIndex) {
-            const video = webcam;
-            const canvas = captureCanvas;
-            canvas.width = 1280;
-            canvas.height = 960;
-            const ctx = canvas.getContext('2d');
-
-            ctx.save();
-            if (state.isMirrored) {
-                ctx.translate(canvas.width, 0);
-                ctx.scale(-1, 1);
-            }
-
-            // Apply filter context
-            ctx.filter = canvasFilterMap[state.currentFilter] || 'none';
-
-            // Crop Center (Object Cover algorithm)
-            const vWidth = video.videoWidth || 1280;
-            const vHeight = video.videoHeight || 960;
-            const targetRatio = 4 / 3;
-            let sWidth = vWidth;
-            let sHeight = vHeight;
-            let sx = 0;
-            let sy = 0;
-
-            if (vWidth / vHeight > targetRatio) {
-                sWidth = vHeight * targetRatio;
-                sx = (vWidth - sWidth) / 2;
-            } else {
-                sHeight = vWidth / targetRatio;
-                sy = (vHeight - sHeight) / 2;
-            }
-
-            ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
-            ctx.restore();
-
-            state.capturedPhotos[slotIndex] = canvas.toDataURL('image/png');
         }
 
         function uploadImageFallback(event) {
@@ -623,39 +661,27 @@
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function (e) {
+            reader.onload = (e) => {
                 const img = new Image();
-                img.onload = function () {
-                    const canvas = captureCanvas;
-                    canvas.width = 1280;
-                    canvas.height = 960;
-                    const ctx = canvas.getContext('2d');
-                    
-                    // Draw with Aspect Cover
-                    const targetRatio = 4 / 3;
-                    let sWidth = img.width;
-                    let sHeight = img.height;
-                    let sx = 0, sy = 0;
+                img.onload = () => {
+                    captureCanvas.width = img.width;
+                    captureCanvas.height = img.height;
+                    const ctx = captureCanvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
 
-                    if (img.width / img.height > targetRatio) {
-                        sWidth = img.height * targetRatio;
-                        sx = (img.width - sWidth) / 2;
-                    } else {
-                        sHeight = img.width / targetRatio;
-                        sy = (img.height - sHeight) / 2;
-                    }
+                    applyPixelFilter(ctx, captureCanvas.width, captureCanvas.height, state.currentFilter);
 
-                    ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
-                    
-                    // Insert into empty slot or next available
+                    const photoData = captureCanvas.toDataURL('image/png');
                     const config = layoutConfigs[state.currentLayout];
-                    let targetSlot = state.capturedPhotos.findIndex(p => !p);
-                    if (targetSlot === -1) targetSlot = 0;
 
-                    state.capturedPhotos[targetSlot] = canvas.toDataURL('image/png');
-                    renderSlotsThumbnails();
-                    renderFramePhotos();
-                    showToast("เพิ่มรูปเรียบร้อย");
+                    if (state.capturedPhotos.length < config.count) {
+                        state.capturedPhotos.push(photoData);
+                    } else {
+                        state.capturedPhotos[config.count - 1] = photoData;
+                    }
+                    renderFrameSlots();
+                    updatePhotoBadges();
+                    showToast("อัปโหลดรูปสำเร็จ");
                 };
                 img.src = e.target.result;
             };
@@ -666,217 +692,73 @@
             const text = document.getElementById('captionInput').value;
             const showDate = document.getElementById('showDateToggle').checked;
             
-            document.getElementById('frameCaptionDisplay').innerText = text || '';
-            document.getElementById('frameDateDisplay').style.display = showDate ? 'block' : 'none';
+            document.getElementById('frameCaptionDisplay').innerText = text;
+            
+            const dateDisp = document.getElementById('frameDateDisplay');
+            if (showDate) {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                dateDisp.innerText = `${yyyy}.${mm}.${dd}`;
+                dateDisp.style.display = 'block';
+            } else {
+                dateDisp.style.display = 'none';
+            }
         }
 
         function addSticker(emoji) {
             const container = document.getElementById('stickersContainer');
             const sticker = document.createElement('div');
-            sticker.className = 'sticker-item absolute text-2xl z-30 select-none';
+            sticker.className = 'sticker-item absolute text-2xl select-none';
+            sticker.innerText = emoji;
             sticker.style.left = '40%';
             sticker.style.top = '40%';
-            sticker.innerText = emoji;
 
-            makeDraggable(sticker);
+            let isDragging = false;
+            let currentX, currentY, initialX, initialY;
+
+            function dragStart(e) {
+                isDragging = true;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                initialX = clientX - sticker.offsetLeft;
+                initialY = clientY - sticker.offsetTop;
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                currentX = clientX - initialX;
+                currentY = clientY - initialY;
+                sticker.style.left = `${currentX}px`;
+                sticker.style.top = `${currentY}px`;
+            }
+
+            function dragEnd() { isDragging = false; }
+
+            sticker.addEventListener('mousedown', dragStart);
+            sticker.addEventListener('touchstart', dragStart, { passive: false });
+            window.addEventListener('mousemove', drag);
+            window.addEventListener('touchmove', drag, { passive: false });
+            window.addEventListener('mouseup', dragEnd);
+            window.addEventListener('touchend', dragEnd);
+
             container.appendChild(sticker);
-            showToast(`เพิ่มสติกเกอร์ ${emoji}`);
         }
 
         function clearStickers() {
             document.getElementById('stickersContainer').innerHTML = '';
-            showToast("ล้างสติกเกอร์ทั้งหมดแล้ว");
-        }
-
-        function makeDraggable(el) {
-            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            el.onmousedown = dragMouseDown;
-            el.ontouchstart = dragTouchStart;
-
-            function dragMouseDown(e) {
-                e.preventDefault();
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                document.onmouseup = closeDragElement;
-                document.onmousemove = elementDrag;
-            }
-
-            function elementDrag(e) {
-                e.preventDefault();
-                pos1 = pos3 - e.clientX;
-                pos2 = pos4 - e.clientY;
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                el.style.top = (el.offsetTop - pos2) + "px";
-                el.style.left = (el.offsetLeft - pos1) + "px";
-            }
-
-            function closeDragElement() {
-                document.onmouseup = null;
-                document.onmousemove = null;
-            }
-
-            function dragTouchStart(e) {
-                const touch = e.touches[0];
-                pos3 = touch.clientX;
-                pos4 = touch.clientY;
-                document.ontouchend = closeTouchDrag;
-                document.ontouchmove = touchDrag;
-            }
-
-            function touchDrag(e) {
-                const touch = e.touches[0];
-                pos1 = pos3 - touch.clientX;
-                pos2 = pos4 - touch.clientY;
-                pos3 = touch.clientX;
-                pos4 = touch.clientY;
-                el.style.top = (el.offsetTop - pos2) + "px";
-                el.style.left = (el.offsetLeft - pos1) + "px";
-            }
-
-            function closeTouchDrag() {
-                document.ontouchend = null;
-                document.ontouchmove = null;
-            }
-        }
-
-        // Render Frame Canvas and Export Real Frame Image
-        async function generateExportCanvas() {
-            const exportCanvas = document.createElement('canvas');
-            const width = 800;
-            let height = 1200;
-
-            if (state.currentLayout === '2x2') height = 900;
-            if (state.currentLayout === 'polaroid') height = 950;
-
-            exportCanvas.width = width;
-            exportCanvas.height = height;
-            const ctx = exportCanvas.getContext('2d');
-
-            // 1. Draw Frame Background
-            ctx.fillStyle = '#FFFFFF';
-            if (state.currentTheme === 'pink-ribbon') ctx.fillStyle = '#FFB6C1';
-            if (state.currentTheme === 'pastel-cloud') ctx.fillStyle = '#E0C3FC';
-            if (state.currentTheme === 'retro-film') ctx.fillStyle = '#262626';
-            if (state.currentTheme === 'cute-cats') ctx.fillStyle = '#FEF3C7';
-            if (state.currentTheme === 'sweet-hearts') ctx.fillStyle = '#FCA5A5';
-            if (state.currentTheme === 'flower-blossom') ctx.fillStyle = '#D1FAE5';
-            if (state.currentTheme === 'birthday') ctx.fillStyle = '#FFD1DC';
-            if (state.currentTheme === 'milk-tea') ctx.fillStyle = '#E5D0AC';
-            if (state.currentTheme === 'soft-lavender') ctx.fillStyle = '#E8DFF5';
-            if (state.currentTheme === 'minimal-black') ctx.fillStyle = '#111827';
-            
-            ctx.fillRect(0, 0, width, height);
-
-            // Clean white border line
-            if (state.currentTheme === 'clean-white') {
-                ctx.strokeStyle = '#E5E7EB';
-                ctx.lineWidth = 10;
-                ctx.strokeRect(0, 0, width, height);
-            }
-
-            // 2. Draw Photos into Grid
-            const config = layoutConfigs[state.currentLayout];
-            const padding = 40;
-            const photoGap = 20;
-            let photoWidth = width - (padding * 2);
-            let photoHeight = (photoWidth * 3) / 4;
-
-            if (state.currentLayout === '2x2') {
-                photoWidth = (width - (padding * 2) - photoGap) / 2;
-                photoHeight = (photoWidth * 3) / 4;
-            }
-
-            for (let i = 0; i < config.count; i++) {
-                const photoSrc = state.capturedPhotos[i];
-                let x = padding;
-                let y = padding + i * (photoHeight + photoGap);
-
-                if (state.currentLayout === '2x2') {
-                    const row = Math.floor(i / 2);
-                    const col = i % 2;
-                    x = padding + col * (photoWidth + photoGap);
-                    y = padding + row * (photoHeight + photoGap);
-                }
-
-                ctx.fillStyle = '#F3F4F6';
-                ctx.fillRect(x, y, photoWidth, photoHeight);
-
-                if (photoSrc) {
-                    await new Promise((resolve) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            ctx.drawImage(img, x, y, photoWidth, photoHeight);
-                            resolve();
-                        };
-                        img.src = photoSrc;
-                    });
-                }
-            }
-
-            // 3. Draw Captions & Dates
-            const captionText = document.getElementById('captionInput').value;
-            const showDate = document.getElementById('showDateToggle').checked;
-
-            ctx.textAlign = 'center';
-            if (['minimal-black', 'retro-film'].includes(state.currentTheme)) {
-                ctx.fillStyle = '#FFFFFF';
-            } else {
-                ctx.fillStyle = '#1F2937';
-            }
-
-            ctx.font = 'bold 32px Sriracha, cursive, sans-serif';
-            ctx.fillText(captionText, width / 2, height - 70);
-
-            if (showDate) {
-                ctx.font = 'bold 20px Prompt, sans-serif';
-                ctx.fillStyle = ['minimal-black', 'retro-film'].includes(state.currentTheme) ? '#9CA3AF' : '#6B7280';
-                ctx.fillText('2026.09.25', width / 2, height - 35);
-            }
-
-            return exportCanvas;
-        }
-
-        async function downloadImage() {
-            if (state.capturedPhotos.filter(Boolean).length === 0) {
-                showToast("กรุณาถ่ายรูปอย่างน้อย 1 รูป");
-                return;
-            }
-
-            showToast("กำลังเตรียมดาวน์โหลดรูปภาพ...");
-            const exportCanvas = await generateExportCanvas();
-            const link = document.createElement('a');
-            link.download = `Haru-Photobooth-${Date.now()}.png`;
-            link.href = exportCanvas.toDataURL('image/png');
-            link.click();
-            showToast("บันทึกรูปภาพเรียบร้อยแล้ว");
-        }
-
-        async function printPhoto() {
-            if (state.capturedPhotos.filter(Boolean).length === 0) {
-                showToast("กรุณาถ่ายรูปก่อนสั่งพิมพ์");
-                return;
-            }
-
-            const exportCanvas = await generateExportCanvas();
-            const dataUrl = exportCanvas.toDataURL('image/png');
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <html>
-                <head><title>Print Photo - Haru Studio</title></head>
-                <body style="margin:0; display:flex; justify-content:center; align-items:center; min-height:100vh; background:#f0f0f0;">
-                    <img src="${dataUrl}" style="max-width:100%; max-height:100vh; object-fit:contain;" onload="window.print(); window.close();">
-                </body>
-                </html>
-            `);
+            showToast("ล้างสติกเกอร์แล้ว");
         }
 
         function resetApp() {
             state.capturedPhotos = [];
-            state.stickers = [];
             clearStickers();
-            renderSlotsThumbnails();
-            renderFramePhotos();
+            renderFrameSlots();
+            updatePhotoBadges();
             showToast("รีเซ็ตระบบเรียบร้อย");
         }
 
@@ -884,23 +766,44 @@
             const toast = document.getElementById('toast');
             document.getElementById('toastMsg').innerText = msg;
             toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
             setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
                 toast.classList.add('translate-y-20', 'opacity-0');
             }, 2500);
         }
 
-        function triggerConfetti() {
-            if (typeof confetti === 'function') {
-                confetti({
-                    particleCount: 70,
-                    spread: 60,
-                    origin: { y: 0.7 }
-                });
+        async function downloadImage() {
+            showToast("กำลังประมวลผลรูปภาพ...");
+            const frame = document.getElementById('photoboothFrame');
+            
+            try {
+                // Dynamic import html2canvas
+                if (!window.html2canvas) {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                    document.head.appendChild(script);
+                    await new Promise(r => script.onload = r);
+                }
+
+                const canvas = await html2canvas(frame, { scale: 3, useCORS: true, backgroundColor: null });
+                const link = document.createElement('a');
+                link.download = `Haru-Photobooth-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast("บันทึกรูปภาพเรียบร้อย!");
+            } catch (err) {
+                console.error(err);
+                showToast("ไม่สามารถดาวน์โหลดได้");
             }
         }
 
-        // Initialize App
-        window.addEventListener('load', () => {
+        function printPhoto() {
+            window.print();
+        }
+
+        // Initialize App on Load
+        window.addEventListener('DOMContentLoaded', () => {
             initCamera();
             setLayout('4-strip');
             applyTheme('pink-ribbon');
