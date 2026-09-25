@@ -131,7 +131,7 @@
                         <!-- Countdown Screen -->
                         <div id="countdownOverlay" class="absolute inset-0 bg-black/40 backdrop-blur-xs hidden flex-col items-center justify-center text-white z-20">
                             <span id="countdownNumber" class="font-mali text-7xl font-bold text-pink-200 animate-bounce">3</span>
-                            <span class="text-xs font-semibold mt-2 bg-pink-400/90 backdrop-blur-md px-4 py-1.5 rounded-full font-mali">ยิ้มหวานๆหน่อยงับ</span>
+                            <span class="text-xs font-semibold mt-2 bg-pink-400/90 backdrop-blur-md px-4 py-1.5 rounded-full font-mali">ยิ้มหวานๆหน่อยจ้าาาา</span>
                         </div>
 
                         <!-- Camera Offline / Permission Prompt -->
@@ -140,7 +140,7 @@
                                 <i class="fa-solid fa-video"></i>
                             </div>
                             <h3 class="font-bold text-gray-700 text-sm">เปิดใช้งานกล้องถ่ายรูป</h3>
-                            <p class="text-xs text-gray-400 font-mali my-2">กดปุ่มเพื่ออนุญาตให้เข้าถึงกล้อง หรืออัปโหลดรูปภาพทดแทน</p>
+                            <p class="text-xs text-gray-400 font-mali my-2">กดปุ่มเพื่ออนุญาตให้เข้าถึงกล้อง หรืออัปโหลดรูปภาพ</p>
                             <div class="flex flex-wrap gap-2 justify-center mt-1">
                                 <button onclick="initCamera()" class="bg-pink-400 hover:bg-pink-500 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-xs transition cursor-pointer">
                                     <i class="fa-solid fa-power-off"></i> เปิดกล้อง
@@ -199,7 +199,7 @@
                         <button id="startCaptureBtn" onclick="startPhotoSequence()" class="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-tr from-pink-400 to-rose-400 hover:from-pink-500 hover:to-rose-500 text-white rounded-full shadow-lg border-4 border-pink-100 flex items-center justify-center transition active:scale-90 shutter-btn-anim cursor-pointer">
                             <i class="fa-solid fa-camera text-2xl sm:text-3xl"></i>
                         </button>
-                        <span class="text-xs font-bold text-pink-500 font-mali mt-2">กดถ่ายรูปที่นี่</span>
+                        <span class="text-xs font-bold text-pink-500 font-mali mt-2">ถ่ายรูป</span>
                     </div>
 
                 </div>
@@ -209,8 +209,7 @@
                     <!-- 1. Layout Chooser -->
                     <div>
                         <h3 class="font-bold text-xs sm:text-sm text-gray-700 mb-2 flex items-center gap-1.5">
-                            <i class="fa-solid fa-border-all text-pink-400"></i> 1. เลือกรูปแบบกรอบ (Layout)
-                        </h3>
+                            <i class="fa-solid fa-border-all text-pink-400"></i> 1. เลือกกรอบ
                         <div class="grid grid-cols-4 gap-2">
                             <button onclick="setLayout('4-strip')" id="layoutBtn-4-strip" class="layout-btn p-2 rounded-2xl border-2 border-pink-400 bg-pink-50 flex flex-col items-center gap-1 transition cursor-pointer">
                                 <div class="w-5 h-8 border border-pink-300 rounded bg-white p-0.5 flex flex-col gap-0.5"><div class="bg-pink-300 h-full rounded-2xs"></div><div class="bg-pink-300 h-full rounded-2xs"></div><div class="bg-pink-300 h-full rounded-2xs"></div><div class="bg-pink-300 h-full rounded-2xs"></div></div>
@@ -255,7 +254,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-gray-100">
                         <div>
                             <label class="text-xs font-bold text-gray-700 mb-1 block">3. ข้อความใต้รูป</label>
-                            <input type="text" id="captionInput" oninput="updateCaption()" value="✨ HARU PHOTO STUDIO ✨" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-pink-300">
+                            <input type="text" id="captionInput" oninput="updateCaption()" value="Photo Camera" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-pink-300">
                             <div class="flex items-center justify-between text-[11px] mt-1 text-gray-500">
                                 <span>ประทับตราวันที่</span>
                                 <input type="checkbox" id="showDateToggle" checked onchange="updateCaption()" class="accent-pink-400 w-3.5 h-3.5 rounded cursor-pointer">
@@ -264,7 +263,7 @@
 
                         <div>
                             <div class="flex justify-between items-center mb-1">
-                                <label class="text-xs font-bold text-gray-700">4. แปะสติกเกอร์น่ารัก</label>
+                                <label class="text-xs font-bold text-gray-700">4. ตกเเต่งสติ๊กเกอร์</label>
                                 <button onclick="clearStickers()" class="text-[10px] text-pink-500 font-bold hover:underline cursor-pointer">ล้างสติกเกอร์</button>
                             </div>
                             <div class="flex flex-wrap gap-1 bg-gray-50 p-1.5 rounded-xl border border-gray-100 text-base">
@@ -292,7 +291,7 @@
                     
                     <div class="flex items-center justify-between w-full mb-3 pb-2 border-b border-gray-100">
                         <h3 class="font-bold text-xs sm:text-sm text-gray-700 flex items-center gap-1.5">
-                            <i class="fa-solid fa-images text-pink-400"></i> แผ่นรูปถ่ายของคุณ
+                            <i class="fa-solid fa-images text-pink-400"></i> รูปถ่ายของคุณ
                         </h3>
                         <span class="text-[10px] bg-pink-50 text-pink-500 px-2 py-0.5 rounded-full font-bold">PREVIEW</span>
                     </div>
@@ -307,7 +306,7 @@
 
                         <!-- Caption Footer -->
                         <div class="w-full text-center mt-2.5 z-10">
-                            <p id="frameCaptionDisplay" class="font-cute text-gray-800 text-sm font-bold leading-tight">✨ HARU PHOTO STUDIO ✨</p>
+                            <p id="frameCaptionDisplay" class="font-cute text-gray-800 text-sm font-bold leading-tight">Photo Camera</p>
                             <p id="frameDateDisplay" class="text-[9px] tracking-wider text-gray-600 font-bold uppercase mt-0.5">2026.09.25</p>
                         </div>
 
@@ -323,7 +322,7 @@
                         
                         <!-- Slot Retake Thumbnails -->
                         <div class="text-left">
-                            <label class="text-[11px] font-bold text-gray-500 block mb-1">ถ่ายซ่อมเฉพาะช่อง:</label>
+                            <label class="text-[11px] font-bold text-gray-500 block mb-1">ถ่ายใหม่เฉพาะช่อง:</label>
                             <div id="slotsThumbnails" class="grid grid-cols-4 gap-1.5">
                                 <!-- JS Injected Slot Retake Buttons -->
                             </div>
@@ -791,7 +790,7 @@
                 link.download = `Haru-Photobooth-${Date.now()}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
-                showToast("บันทึกรูปภาพเรียบร้อย!");
+                showToast("บันทึกรูปภาพเรียบร้อย");
             } catch (err) {
                 console.error(err);
                 showToast("ไม่สามารถดาวน์โหลดได้");
