@@ -564,23 +564,56 @@
         }
 
         // Capture Frame Function
+        // บันทึกภาพให้มีสัดส่วนเดียวกับช่อง Preview (4:3)
+        // ป้องกันภาพจากกล้อง 16:9 ถูกยืด/บีบตอนนำไปแสดงในกรอบ
         function capturePhotoFromCamera() {
-            if (!webcam.videoWidth) return null;
+            if (!webcam.videoWidth || !webcam.videoHeight) return null;
 
-            captureCanvas.width = webcam.videoWidth;
-            captureCanvas.height = webcam.videoHeight;
-            const ctx = captureCanvas.getContext('2d');
+            const targetAspect = 4 / 3;
+            const sourceAspect = webcam.videoWidth / webcam.videoHeight;
+
+            let sx = 0;
+            let sy = 0;
+            let sw = webcam.videoWidth;
+            let sh = webcam.videoHeight;
+
+            // Crop ตรงกลางให้เป็น 4:3 แบบเดียวกับ object-cover
+            if (sourceAspect > targetAspect) {
+                // กล้องกว้างเกินไป เช่น 16:9 -> ตัดซ้าย/ขวา
+                sw = Math.round(webcam.videoHeight * targetAspect);
+                sx = Math.round((webcam.videoWidth - sw) / 2);
+            } else if (sourceAspect < targetAspect) {
+                // กล้องสูงเกินไป -> ตัดบน/ล่าง
+                sh = Math.round(webcam.videoWidth / targetAspect);
+                sy = Math.round((webcam.videoHeight - sh) / 2);
+            }
+
+            const outputWidth = sw;
+            const outputHeight = Math.round(sw / targetAspect);
+
+            captureCanvas.width = outputWidth;
+            captureCanvas.height = outputHeight;
+
+            const ctx = captureCanvas.getContext('2d', { willReadFrequently: true });
 
             ctx.save();
+
+            // Mirror ให้ตรงกับ Preview
             if (state.isMirrored) {
-                ctx.translate(captureCanvas.width, 0);
+                ctx.translate(outputWidth, 0);
                 ctx.scale(-1, 1);
             }
-            ctx.drawImage(webcam, 0, 0, captureCanvas.width, captureCanvas.height);
+
+            // วาดเฉพาะส่วน 4:3 ไม่ยืดภาพ
+            ctx.drawImage(
+                webcam,
+                sx, sy, sw, sh,
+                0, 0, outputWidth, outputHeight
+            );
+
             ctx.restore();
 
-            // Apply manual pixel processing for iOS compatibility
-            applyPixelFilter(ctx, captureCanvas.width, captureCanvas.height, state.currentFilter);
+            applyPixelFilter(ctx, outputWidth, outputHeight, state.currentFilter);
 
             triggerFlashAnimation();
             return captureCanvas.toDataURL('image/png');
@@ -775,24 +808,45 @@
         async function downloadImage() {
             showToast("กำลังประมวลผลรูปภาพ...");
             const frame = document.getElementById('photoboothFrame');
-            
+
             try {
-                // Dynamic import html2canvas
                 if (!window.html2canvas) {
                     const script = document.createElement('script');
                     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
                     document.head.appendChild(script);
-                    await new Promise(r => script.onload = r);
+                    await new Promise((resolve, reject) => {
+                        script.onload = resolve;
+                        script.onerror = reject;
+                    });
                 }
 
-                const canvas = await html2canvas(frame, { scale: 3, useCORS: true, backgroundColor: null });
+                // ใช้ขนาดจริงของกรอบบนหน้าจอ และเพิ่มความละเอียด 4 เท่า
+                // ไม่กำหนด width/height ใหม่ จึงรักษาสัดส่วนของกรอบเดิม
+                const rect = frame.getBoundingClientRect();
+                const exportScale = 4;
+
+                const canvas = await html2canvas(frame, {
+                    scale: exportScale,
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                    useCORS: true,
+                    allowTaint: false,
+                    backgroundColor: null,
+                    imageTimeout: 15000,
+                    logging: false
+                });
+
                 const link = document.createElement('a');
                 link.download = `Haru-Photobooth-${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.href = canvas.toDataURL('image/png', 1.0);
+
+                document.body.appendChild(link);
                 link.click();
-                showToast("บันทึกรูปภาพเรียบร้อย");
+                link.remove();
+
+                showToast(`บันทึกรูปภาพเรียบร้อย (${canvas.width} × ${canvas.height}px)`);
             } catch (err) {
-                console.error(err);
+                console.error("Export Error:", err);
                 showToast("ไม่สามารถดาวน์โหลดได้");
             }
         }
